@@ -1,0 +1,23 @@
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+
+/// <summary>
+/// Класс-клиент, который использует сервис для размещения каркаса.
+/// Сервис "внедряется" через конструктор.
+/// </summary>
+public class FramePlacer
+{
+    private readonly IRevitModelingService _modelingService;
+
+    // Конструктор получает зависимость (сервис) извне
+    public FramePlacer(IRevitModelingService modelingService)
+    {
+        _modelingService = modelingService;
+    }
+
+    public void PlaceFrameInSelectedWall(Document doc, Wall selectedWall)
+    {
+        // Используем внедренный сервис для выполнения задачи
+        _modelingService.PlaceSteelFrameInWall(doc, selectedWall);
+    }
+}
