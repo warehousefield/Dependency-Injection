@@ -1,0 +1,10 @@
+using Autodesk.Revit.DB;
+
+/// <summary>
+/// Интерфейс для сервиса, который выполняет моделирование в Revit.
+/// Это наша "зависимость".
+/// </summary>
+public interface IRevitModelingService
+{
+    bool PlaceSteelFrameInWall(Document doc, Wall rcWall);
+}
