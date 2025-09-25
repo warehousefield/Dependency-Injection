@@ -1,0 +1,61 @@
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using System.Linq;
+
+public class RevitModelingService : IRevitModelingService
+{
+    public bool PlaceSteelFrameInWall(Document doc, Wall rcWall)
+    {
+        // Проверяем, что стена существует
+        if (rcWall == null)
+        {
+            TaskDialog.Show("Ошибка", "Стена не найдена.");
+            return false;
+        }
+
+        // Ищем в проекте тип семейства, которое будет служить каркасом.
+        // Для примера, ищем "стальную балку" по её имени.
+        var familySymbol = new FilteredElementCollector(doc)
+            .OfClass(typeof(FamilySymbol))
+            .Cast<FamilySymbol>()
+            .FirstOrDefault(fs => fs.Family.Name.Contains("Steel Beam") && fs.IsActive);
+            
+        if (familySymbol == null)
+        {
+            TaskDialog.Show("Ошибка", "Тип семейства 'Steel Beam' не найден. Пожалуйста, загрузите его в проект.");
+            return false;
+        }
+
+        // Получаем геометрию стены для определения точек размещения.
+        LocationCurve wallCurve = rcWall.Location as LocationCurve;
+        XYZ startPoint = wallCurve.Curve.GetEndPoint(0);
+        XYZ endPoint = wallCurve.Curve.GetEndPoint(1);
+
+        using (Transaction t = new Transaction(doc, "Размещение металлического каркаса"))
+        {
+            t.Start();
+            
+            // Активируем FamilySymbol
+            if (!familySymbol.IsActive)
+                familySymbol.Activate();
+
+            // Размещаем 2 стальных элемента в начале и конце стены
+            FamilyInstance beam1 = doc.Create.NewFamilyInstance(
+                startPoint,
+                familySymbol,
+                Autodesk.Revit.DB.Structural.StructuralType.Beam);
+                
+            FamilyInstance beam2 = doc.Create.NewFamilyInstance(
+                endPoint,
+                familySymbol,
+                Autodesk.Revit.DB.Structural.StructuralType.Beam);
+
+            // Здесь можно добавить более сложную логику, например, размещение нескольких балок с заданным шагом.
+            
+            t.Commit();
+        }
+
+        TaskDialog.Show("Успех", $"Металлический каркас размещен в стене '{rcWall.Name}'");
+        return true;
+    }
+}
