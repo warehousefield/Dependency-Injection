@@ -1,0 +1,38 @@
+using Autodesk.Revit.Attributes;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using System.Linq;
+
+[Transaction(TransactionMode.Manual)]
+public class PlaceSteelFrameCommand : IExternalCommand
+{
+    public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+    {
+        Document doc = commandData.Application.ActiveUIDocument.Document;
+        UIDocument uiDoc = commandData.Application.ActiveUIDocument;
+
+        // 1. Создание зависимости (Сервиса)
+        IRevitModelingService modelingService = new RevitModelingService();
+
+        // 2. Создание клиента (FramePlacer), и внедрение в него зависимости через конструктор
+        FramePlacer placer = new FramePlacer(modelingService);
+
+        // 3. Получение стены, выбранной пользователем
+        Reference pickedRef = uiDoc.Selection.PickObject(
+            Autodesk.Revit.UI.Selection.ObjectType.Element,
+            "Выберите железобетонную стену.");
+
+        Wall selectedWall = doc.GetElement(pickedRef) as Wall;
+        
+        if (selectedWall == null)
+        {
+            message = "Выбранный элемент не является стеной.";
+            return Result.Failed;
+        }
+
+        // 4. Вызов логики у клиента
+        placer.PlaceFrameInSelectedWall(doc, selectedWall);
+
+        return Result.Succeeded;
+    }
+}
